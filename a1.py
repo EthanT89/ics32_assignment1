@@ -2,126 +2,130 @@
 # ethornbe@uci.edu
 # 43744127
 
-""" Imports """
-
-from pathlib import Path
 import shlex
+from pathlib import Path
 
-""" Base Functions """
+def parse_input(user_input: str):
+    """Split user input into a list of tokens using shlex."""
 
-# Input should appear as follows:
-# [COMMAND] [INPUT] [[-]OPTION] [INPUT]
-# Should handle Absolute and relative paths in commands
+    user_input = user_input.strip()
+    if not user_input:
+        return []
+    return shlex.split(user_input)
 
-def create_file (directory, file_name, cmd):
-    # Creates a new file in the specified directory
-    # C 'path' -n 'name' 
-    # All files are '.dsu' formats
-    if not directory.exists():
-        print('ERROR')
+def create_file(parsed_input):
+    """
+    Creates a file given a File Path and File Name
+    If successful, prints the path to the newly created file.
+    Otherwise, prints 'ERROR'.
+    """
+    if len(parsed_input) != 4:
+        print("ERROR")
         return
-
-    if cmd == '-n':
-        filename = file_name + '.dsu'
-    else:
-        print('ERROR')
-        return
-
-    new_file = directory / filename
     
-    if new_file.exists():
-        print('ERROR')
-        return
-
-    # Create new file
-    new_file.touch()  # physically creates an empty file
-
-    # Confirm file was created by printing the new path
-    print(new_file)
-
-def delete_file (file_to_delete):
-    # Deletes an existing DSU file in the given directory
-    # D 'path'
-
-    # Check if file exists and is a DSU file, otherwise print ERROR
-
-    if (not file_to_delete.exists()) or (file_to_delete.suffix != ".dsu"):
+    dir_path_str = parsed_input[1]
+    option = parsed_input[2]
+    file_name = parsed_input[3]
+    
+    if option != '-n':
         print("ERROR")
         return
 
-    # Delete file
-    file_to_delete.unlink()
-
-    # Output 'path' DELETED
-    print(f"{file_to_delete} DELETED")
-
-def read_file (file_to_read):
-    # Print the contents of a DSU file given the directory
-    # R 'path'
-    
-    # Check if file exists and is DSU file, print EMPTY and prompt input again
-    if not file_to_read.exists() or file_to_read.suffix != ".dsu":
+    dir_path = Path(dir_path_str)
+    if not dir_path.is_dir():
         print("ERROR")
         return
-    # Check contents, if empty print EMPTY and wait for corrected input
-    contents = file_to_read.read_text()
-    if not contents:
-        print("EMPTY")
-    else:
-        # Print contents if not empty
-        print(contents)
 
-def main ():
+    new_file_path = dir_path / f"{file_name}.dsu"
 
-    user_input = ''
+    if new_file_path.exists():
+        print("ERROR")
+        return
+    
+    try:
+        new_file_path.touch()
+        print(str(new_file_path))
+    except Exception:
+        print("ERROR")
 
-    while user_input != 'q':
+def delete_file(parsed_input):
+    """
+    Handle the 'D' command.
+    Expects: D path_to_file
+    If successful, prints '<file_path> DELETED'.
+    Otherwise, prints 'ERROR'.
+    """
+    if len(parsed_input) != 2:
+        print("ERROR")
+        return
+    
+    # parsed_input[0] = 'D'
+    file_path_str = parsed_input[1]
+    file_path = Path(file_path_str)
 
+    # Must be a .dsu file and must exist
+    if file_path.suffix != '.dsu' or not file_path.exists():
+        print("ERROR")
+        return
+
+    try:
+        file_path.unlink()
+        print(f"{file_path} DELETED")
+    except Exception:
+        print("ERROR")
+
+def read_file(parsed_input):
+    """
+    Handle the 'R' command.
+    Expects: R path_to_file
+    If file is empty, prints 'EMPTY'.
+    Otherwise, prints the file contents.
+    Prints 'ERROR' if it's not a valid .dsu file or doesn't exist.
+    """
+    if len(parsed_input) != 2:
+        print("ERROR")
+        return
+    
+    # parsed_input[0] = 'R'
+    file_path_str = parsed_input[1]
+    file_path = Path(file_path_str)
+
+    # Check suffix and existence
+    if file_path.suffix != '.dsu' or not file_path.exists():
+        print("ERROR")
+        return
+
+    try:
+        contents = file_path.read_text()
+        if len(contents.strip()) == 0:
+            print("EMPTY")
+        else:
+            # Print file contents directly
+            print(contents, end='')
+    except Exception:
+        print("ERROR")
+
+def main():
+    while True:
         user_input = input()
-    
-        # Parse input contents with shlex.split() 
-        parts = shlex.split(user_input, posix=False)
-
-        if len(parts) == 0:
-            # No command given
+        parsed_input = parse_input(user_input)
+        
+        if not parsed_input:
+            # If empty input, ignore or print ERROR. Let's ignore here.
             continue
-
-        cmd = parts[0].upper()
-
-        if cmd == 'Q':
+        
+        command = parsed_input[0].upper()
+        
+        if command == 'Q':  # Quit
             break
-
-        if cmd not in ['C', 'D', 'R', 'Q']:
+        elif command == 'C':
+            create_file(parsed_input)
+        elif command == 'D':
+            delete_file(parsed_input)
+        elif command == 'R':
+            read_file(parsed_input)
+        else:
             print("ERROR")
-            continue
 
-        if len(parts) < 2:
-            print("ERROR")
-            continue
-
-        if raw_path.startswith('"') and raw_path.endswith('"'):
-            raw_path = raw_path[1:-1]
-
-        directory = Path(parts[1])       
-
-        # execute command using conditional branching
-        if cmd == 'C':
-            if len(parts) < 4:
-                print("ERROR")
-                continue
-            if parts[2] != "-n":
-                print("ERROR")
-                continue
-            create_file (directory, parts[3], parts[2])
-
-        elif cmd == 'D':
-            delete_file (directory)
-
-        elif cmd == 'R':
-            read_file(directory)
-
-if __name__ == '__main__':
-
-    currentDir = Path.cwd()
-
-    main ()
+if __name__ == "__main__":
+    main()
