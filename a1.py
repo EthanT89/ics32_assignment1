@@ -1,5 +1,3 @@
-# a1.py
-
 # Ethan Thornberg
 # ethornbe@uci.edu
 # 43744127
@@ -7,7 +5,7 @@
 """ Imports """
 
 from pathlib import Path
-
+import shlex
 
 """ Base Functions """
 
@@ -15,54 +13,67 @@ from pathlib import Path
 # [COMMAND] [INPUT] [[-]OPTION] [INPUT]
 # Should handle Absolute and relative paths in commands
 
-def create_file (file_path, file_name):
+def create_file (directory, file_name, cmd):
     # Creates a new file in the specified directory
     # C 'path' -n 'name' 
-    # All files are '.sdu' formats
-
-    # Check for existing directory, otherwise print ERROR
-    if not file_path.exists():
-        print('ERROR')
+    # All files are '.dsu' formats
+    if not directory.exists():
+        print('ERROR: directory does not exist.\n')
         return
 
-    # Check for possible existing files with given name, otherwise print ERROR
+    if cmd == '-n':
+        filename = file_name + '.dsu'
+    else:
+        print('ERROR\n')
+        return
+
+    new_file = directory / filename
+    
+    if new_file.exists():
+        print('ERROR: file already exists.\n')
+        return
 
     # Create new file
+    new_file.touch()  # physically creates an empty file
 
     # Confirm file was created by printing the new path
+    print(new_file)
+    print()
 
-    pass
-
-def delete_file (file_path):
+def delete_file (file_to_delete):
     # Deletes an existing DSU file in the given directory
     # D 'path'
+    print('Attempting to delete file -', file_to_delete)
 
     # Check if file exists and is a DSU file, otherwise print ERROR
 
+    if (not file_to_delete.exists()) or (file_to_delete.suffix != ".dsu"):
+        print("ERROR: File DNE")
+        return
+
     # Delete file
-    file_path.unlink()
+    file_to_delete.unlink()
+
     # Output 'path' DELETED
+    print(f"{file_to_delete} DELETED\n")
 
-    pass
-
-def read_file (file_path):
+def read_file (file_to_read):
     # Print the contents of a DSU file given the directory
     # R 'path'
     
     # Check if file exists and is DSU file, print EMPTY and prompt input again
-    if not file_path.exists() or '.dsu' in str(file_path):
-        print('EMPTY')
+    if not file_to_read.exists() or file_to_read.suffix != ".dsu":
+        print("ERROR: DNE or not .dsu")
         return
     # Check contents, if empty print EMPTY and wait for corrected input
-
-    # Print contents if not empty
-    
-    print(file_path)
-    fileContent = file_path.read_text()
-    print(fileContent)
-    print()
-
-    pass
+    contents = file_to_read.read_text()
+    if not contents:
+        print("EMPTY\n")
+    else:
+        # Print contents if not empty
+        print('Here are the contents of the file: ')
+        print(contents)
+        print()
 
 def print_options ():
     # Print the menu options for the user to choose from
@@ -82,30 +93,31 @@ def main ():
         print_options()
         user_input = input('Please Enter a Command in the Correct Format (\'q\' to quit): \n')
         print()
-        user_input = user_input.lower().strip().split()
-        user_input[1] = Path(user_input[1])
+    
+        # Parse input contents with shlex.split() 
+        parts = shlex.split(user_input)
+        
+        if len(parts) == 0:
+            # No command given
+            continue
 
-        print(user_input[0], 'is your command\n')
+        cmd = parts[0].upper()
 
-        if user_input[0] == 'c':
-            create_file (user_input[1], user_input[3])
+        if cmd not in ['C', 'D', 'R', 'Q']:
+            print("ERROR")
+            continue
 
-        elif user_input[0] == 'd':
-            delete_file (user_input[1])
+        directory = Path(parts[1])       
 
-        elif user_input[0] == 'r':
-            read_file(user_input[1])
+        # execute command using conditional branching
+        if cmd == 'C':
+            create_file (directory, parts[3], parts[2])
 
+        elif cmd == 'D':
+            delete_file (directory)
 
-
-
-    # Parse input contents with .split() and .strip() 
-
-    # using conditional branching execute command
-
-    pass
-
-
+        elif cmd == 'R':
+            read_file(directory)
 
 if __name__ == '__main__':
 
